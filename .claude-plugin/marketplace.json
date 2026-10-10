@@ -1,0 +1,5 @@
+{
+  "name": "batman-code",
+  "owner": { "name": "manoj" },
+  "plugins": [{ "name": "batman-code", "source": "./" }]
+}
