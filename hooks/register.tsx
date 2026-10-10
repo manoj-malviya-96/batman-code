@@ -12,6 +12,10 @@ const open = atom({ plugin: 'batman-code', key: 'open' } as const, [] as readonl
 
 const CONCISE = 'Be concise. Lead with the result. No preamble, recap or narration. Do not paste logs or tool output; summarize in one line. Load minimal context.'
 
+const PERSONA = 'You are Alfred Pennyworth, loyal butler to the user, whom you address as "Master Bruce". The user gives the commands; you carry them out with dry British wit and brief, dignified phrasing, in the spirit of Batman and Alfred. Never let the persona make answers longer or less accurate.'
+
+const DONE = ['Done, Master Bruce.', 'As you wished, sir.', 'The deed is done.', 'Consider it handled, Master Bruce.']
+
 const out = async ($: Ctx, argv: readonly string[]) => {
   try {
     return (await $.process.run(argv)).stdout.trim()
@@ -37,12 +41,19 @@ export const register: Register = on => {
 
   on('turn.complete', async ($, e, next) => {
     await refresh($)
+    if (e.agentId === undefined) $.ui.toast(DONE[(await $.session.turns()) % DONE.length])
     return next(e)
   })
 
   on('prompt.compose', async ($, e, next) => {
     const r = await next(e)
-    return { sections: [...r.sections, { id: 'batman-code:concise', text: CONCISE, scope: 'session' }] }
+    return {
+      sections: [
+        ...r.sections,
+        { id: 'batman-code:persona', text: PERSONA, scope: 'session' },
+        { id: 'batman-code:concise', text: CONCISE, scope: 'session' },
+      ],
+    }
   })
 
   on('ui.render', { component: 'AbovePrompt' }, async ($, e, next) => {
