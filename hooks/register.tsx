@@ -10,7 +10,7 @@ const header = atom({ plugin: 'batman-code', key: 'header' } as const, {
 } as Header)
 const open = atom({ plugin: 'batman-code', key: 'open' } as const, [] as readonly string[])
 
-const CONCISE = 'Be concise. Lead with the result. No preamble, recap or narration. Do not paste logs or tool output; summarize in one line. Load batman-code context.'
+const CONCISE = 'Be concise. Lead with the result. No preamble, recap or narration. Do not paste logs or tool output; summarize in one line. Load minimal context.'
 
 const out = async ($: Ctx, argv: readonly string[]) => {
   try {
