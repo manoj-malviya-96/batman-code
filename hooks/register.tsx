@@ -3,14 +3,14 @@ import type { Register, Ctx } from 'claude-code'
 
 import type { Header } from '../types'
 
-const header = atom({ plugin: 'batman-remode', key: 'header' } as const, {
+const header = atom({ plugin: 'batman-code', key: 'header' } as const, {
   model: '',
   user: '',
   branch: '',
 } as Header)
-const open = atom({ plugin: 'batman-remode', key: 'open' } as const, [] as readonly string[])
+const open = atom({ plugin: 'batman-code', key: 'open' } as const, [] as readonly string[])
 
-const CONCISE = 'Be concise. Lead with the result. No preamble, recap or narration. Do not paste logs or tool output; summarize in one line. Load batman-remode context.'
+const CONCISE = 'Be concise. Lead with the result. No preamble, recap or narration. Do not paste logs or tool output; summarize in one line. Load batman-code context.'
 
 const out = async ($: Ctx, argv: readonly string[]) => {
   try {
@@ -42,7 +42,7 @@ export const register: Register = on => {
 
   on('prompt.compose', async ($, e, next) => {
     const r = await next(e)
-    return { sections: [...r.sections, { id: 'batman-remode:concise', text: CONCISE, scope: 'session' }] }
+    return { sections: [...r.sections, { id: 'batman-code:concise', text: CONCISE, scope: 'session' }] }
   })
 
   on('ui.render', { component: 'AbovePrompt' }, async ($, e, next) => {

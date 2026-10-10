@@ -1,1 +1,1 @@
-{ "name": "batman-remode", "version": "0.1.0", "description": "Minimal UI: 🦇 Alfred > model > user > branch header, concise output, tool logs hidden until clicked", "types": "./types/index.d.ts" }
+{ "name": "batman-code", "version": "0.1.0", "description": "Minimal UI: 🦇 Alfred > model > user > branch header, concise output, tool logs hidden until clicked", "types": "./types/index.d.ts" }
