@@ -1,0 +1,5 @@
+{
+  "name": "batman-remode",
+  "owner": { "name": "manoj" },
+  "plugins": [{ "name": "batman-remode", "source": "./" }]
+}
