@@ -1,7 +1,7 @@
 import { atom, read, update } from 'claude-code'
 import type { Register, Ctx } from 'claude-code'
 
-import type { Gadget, Header } from '../types'
+import type { Career, Gadget, Header } from '../types'
 
 const header = atom({ plugin: 'batman-code', key: 'header' } as const, {
   model: '',
@@ -11,6 +11,7 @@ const header = atom({ plugin: 'batman-code', key: 'header' } as const, {
 const open = atom({ plugin: 'batman-code', key: 'open' } as const, [] as readonly string[])
 
 const gadgets = atom({ plugin: 'batman-code', key: 'gadgets' } as const, [] as readonly Gadget[])
+const career = atom({ plugin: 'batman-code', key: 'career' } as const, { turns: 0 } as Career)
 
 const PANE = 'batcomputer'
 const QUIET = '🦇 Gotham: quiet'
@@ -42,6 +43,35 @@ const DONE = ['Done, Master Bruce.', 'As you wished, sir.', 'The deed is done.',
 
 const GREETING = 'How are you Master Bruce ?'
 
+const RANKS = [
+  { name: 'Recruit', from: 0 },
+  { name: 'Robin', from: 10 },
+  { name: 'Nightwing', from: 30 },
+  { name: 'Dark Knight', from: 75 },
+  { name: 'The Batman', from: 150 },
+] as const
+
+const rankOf = (turns: number) => {
+  const i = RANKS.reduce((best, r, idx) => (turns >= r.from ? idx : best), 0)
+  return { rank: RANKS[i], next: RANKS[i + 1] }
+}
+
+const meter = (value: number, max: number, width = 10) => {
+  const filled = Math.round(Math.min(1, value / max) * width)
+  return '█'.repeat(filled) + '░'.repeat(width - filled)
+}
+
+const threatOf = (list: readonly Gadget[]) => {
+  const recent = list.slice(-10).filter(g => g.isErrored).length
+  if (recent >= 4) return { label: 'CRITICAL', color: 'red', recent }
+  if (recent >= 2) return { label: 'ALERT', color: 'yellow', recent }
+  return { label: 'CALM', color: 'green', recent }
+}
+
+const VILLAINS = ['The Joker', 'The Riddler', 'Two-Face', 'The Penguin', 'Bane', 'Scarecrow']
+
+const SKYLINE = '▁▂▃▅█▆▃▂▁▂▅▇█▇▅▂▁▃▆█▅▃▁▂▄▇█▆▄▂▁'
+
 const out = async ($: Ctx, argv: readonly string[]) => {
   try {
     return (await $.process.run(argv)).stdout.trim()
@@ -62,6 +92,8 @@ const refresh = async ($: Ctx) => {
 export const register: Register = on => {
   on('session.start', async ($, e, next) => {
     await refresh($)
+    const turns = Number((await $.store.get('turns')) ?? 0)
+    await update($, career, () => ({ turns }))
     await $.command.register({
       name: 'batcomputer',
       description: 'Open the Batcomputer: a live log of the gadgets used this session',
@@ -95,16 +127,25 @@ export const register: Register = on => {
     await update($, gadgets, list =>
       list.map(g => (g.id === gadget.id ? { ...g, isDone: true, isErrored } : g)),
     )
-    $.ui.status(isErrored ? `🚨 Threat detected: ${gadget.tool}` : QUIET)
+    const villain = VILLAINS[(await read($, gadgets)).length % VILLAINS.length]
+    $.ui.status(isErrored ? `🚨 ${villain} sabotaged the ${gadget.tool}` : QUIET)
     return ran
   }).catch(($, e, next) => next(e))
 
   on('ui.render', { component: 'Pane', requestId: PANE }, async ($, e) => {
     const { Box, Text } = $.ui.resolve(e)
     const list = await read($, gadgets)
-    const room = Math.max(1, (e.viewport?.rows ?? 24) - 4)
+    const { turns } = await read($, career)
+    const { rank, next } = rankOf(turns)
+    const threat = threatOf(list)
+    const room = Math.max(1, (e.viewport?.rows ?? 24) - 12)
     return (
-      <Box flexDirection="column">
+      <Box flexDirection="column" borderStyle="round" borderColor="yellow" paddingX={1}>
+        <Text bold color="yellow">🦇 AGENT FILE</Text>
+        <Text>{rank.name} · {turns} missions</Text>
+        <Text color="yellow">{meter(turns - rank.from, next === undefined ? 1 : next.from - rank.from)} {next === undefined ? 'max rank' : `${next.from - turns} to ${next.name}`}</Text>
+        <Text color={threat.color}>⚠ THREAT {threat.label} {meter(threat.recent, 4, 8)}</Text>
+        <Text dimColor>── GADGET LOG ──</Text>
         {list.length === 0 && <Text dimColor>All quiet in Gotham.</Text>}
         {list.slice(-room).map(g => (
           <Text dimColor={g.isDone && !g.isErrored}>
@@ -117,7 +158,14 @@ export const register: Register = on => {
 
   on('turn.complete', async ($, e, next) => {
     await refresh($)
-    if (e.agentId === undefined) $.ui.toast(DONE[(await $.session.turns()) % DONE.length])
+    if (e.agentId === undefined) {
+      const turns = Number((await $.store.get('turns')) ?? 0) + 1
+      await $.store.set('turns', turns)
+      await update($, career, () => ({ turns }))
+      const { rank } = rankOf(turns)
+      const isPromoted = turns > 0 && RANKS.some(r => r.from === turns)
+      $.ui.toast(isPromoted ? `🦇 Promoted: ${rank.name}!` : DONE[(await $.session.turns()) % DONE.length])
+    }
     return next(e)
   })
 
@@ -138,9 +186,14 @@ export const register: Register = on => {
     if (e.props.hasSurvey || h.model === '') return next(e)
     const { Box, Text } = $.ui.resolve(e)
     const parts = ['🦇 batman-code', h.model, h.user, h.branch].filter(p => p !== '')
+    const { turns } = await read($, career)
+    const threat = threatOf(await read($, gadgets))
     return (
-      <Box>
-        <Text dimColor>{parts.join(' > ')}</Text>
+      <Box flexDirection="column">
+        <Text color="yellow" dimColor>{SKYLINE} 🦇 {SKYLINE}</Text>
+        <Text dimColor>
+          {parts.join(' > ')} · {rankOf(turns).rank.name} · <Text color={threat.color}>{threat.label}</Text>
+        </Text>
       </Box>
     )
   })
