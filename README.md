@@ -2,15 +2,33 @@
 
 ## Why
 
-Claude Code's default UI is noisy. This mod strips it down.
+Claude Code's default UI is noisy and dull. This mod strips it down and turns the session into Gotham.
+
+## Vision
+
+- Quiet by default: short replies, tool output on demand.
+- A session that feels like a game: ranks, threats, villains.
+- Guardrails that stop the irreversible stuff.
 
 ## Architecture
 
 ```mermaid
 flowchart LR
-  A[session.start / turn.complete] --> B[header: 🦇 Alfred > model > user > branch]
-  C[prompt.compose] --> D[concise-reply instruction]
-  E[ToolResult render] --> F[collapsed until clicked]
+  A[session.start / turn.complete] --> B[header: model, user, branch]
+  A --> C[career: missions in $.store]
+  D[tool.call] --> E{Bash forbidden?}
+  E -- yes --> F[deny]
+  E -- no --> G[gadget log]
+  G --> H[threat: errors in last 10 gadgets]
+  I[prompt.compose] --> J[Alfred persona + concise reply]
+  K[ui.render] --> L[AbovePrompt: skyline, rank, threat]
+  K --> M[/batcomputer pane]
+  K --> N[ToolResult: collapsed]
+  B --> L
+  C --> L
+  C --> M
+  H --> L
+  H --> M
 ```
 
 ## Plan
@@ -18,7 +36,12 @@ flowchart LR
 - [x] Minimal header above the prompt
 - [x] Concise replies
 - [x] Tool logs hidden until clicked
+- [x] Alfred persona, greeting, turn toasts
+- [x] `/batcomputer` gadget log
+- [x] Skyline, ranks, threat meter
+- [x] Block `rm -rf`, force push, hard reset
 - [ ] Add author to manifest
+- [ ] Tests for ranks, meter, threat, promotion
 
 ## Setup
 
