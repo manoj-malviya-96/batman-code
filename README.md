@@ -23,7 +23,7 @@ flowchart LR
 ## Setup
 
 ```
-/plugin install batman-remode --marketplace manoj-malviya-96/claude-world
+/plugin install batman-remode --marketplace manoj-malviya-96/batman-code
 ```
 
 Answer `y` to add the marketplace, then pick the user scope.
