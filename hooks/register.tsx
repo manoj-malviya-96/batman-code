@@ -16,6 +16,8 @@ const PERSONA = 'You are Alfred Pennyworth, loyal butler to the user, whom you a
 
 const DONE = ['Done, Master Bruce.', 'As you wished, sir.', 'The deed is done.', 'Consider it handled, Master Bruce.']
 
+const GREETING = 'How are you Master Bruce ?'
+
 const out = async ($: Ctx, argv: readonly string[]) => {
   try {
     return (await $.process.run(argv)).stdout.trim()
@@ -36,6 +38,7 @@ const refresh = async ($: Ctx) => {
 export const register: Register = on => {
   on('session.start', async ($, e, next) => {
     await refresh($)
+    $.ui.toast(GREETING)
     return next(e)
   })
 
